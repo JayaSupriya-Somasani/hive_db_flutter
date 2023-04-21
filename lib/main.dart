@@ -1,10 +1,8 @@
-import 'dart:io';
-
-import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:hive_db_flutter/animated_screen.dart';
+import 'package:hive_db_flutter/bouncing_ball.dart';
 import 'package:hive_db_flutter/first_screen.dart';
+import 'package:hive_db_flutter/mixed_animation.dart';
 import 'package:hive_db_flutter/second_screen.dart';
 import 'package:page_transition/page_transition.dart';
 
@@ -45,7 +43,6 @@ class _MyHomePageState extends State<MyHomePage> {
   final TextEditingController _name = TextEditingController();
   final TextEditingController _quantity = TextEditingController();
 
-
   void _showForm(BuildContext ctx, int? itemKey) async {
     showModalBottomSheet(
         context: ctx,
@@ -77,7 +74,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         _quantity.text = '';
                         Navigator.of(context).pop();
                       },
-                      child: const Text("Create New"))
+                      child: const Text("Create New")),
                 ],
               ),
             ));
@@ -117,7 +114,31 @@ class _MyHomePageState extends State<MyHomePage> {
                           type: PageTransitionType.scale,
                           alignment: Alignment.center));
                 },
-                child: const Text("Second Screen"))
+                child: const Text("Second Screen")),
+            ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => AnimatedScreen()));
+                },
+                child: const Text("Animated Screen")),
+            ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => BouncingBall()));
+                },
+                child: const Text("Bouncing Ball")),
+            ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => MixedAnimation()));
+                },
+                child: const Text("Mixed animation"))
           ],
         ),
       ),
