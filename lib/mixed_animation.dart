@@ -22,7 +22,7 @@ class _MixedAnimationState extends State<MixedAnimation>
     super.initState();
     bouncingBall();
     _ballFillController =
-        AnimationController(vsync: this, duration: Duration(seconds: 1));
+        AnimationController(vsync: this, duration: Duration(milliseconds: 200));
     _ballFillAnimation =
         Tween<double>(begin: 0, end: 1).animate(_ballFillController);
   }
@@ -30,8 +30,8 @@ class _MixedAnimationState extends State<MixedAnimation>
   bouncingBall() {
     _bounceController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 1),
-      lowerBound: 0,
+      duration: const Duration(milliseconds: 400),
+      lowerBound: 10,
       upperBound: 100,
     );
 
@@ -44,7 +44,7 @@ class _MixedAnimationState extends State<MixedAnimation>
     _bounceController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         bounceCount++;
-        if (bounceCount >= 3) {
+        if (bounceCount >= 2) {
           _bounceController.stop();
           isBouncing = false;
           fullScreenBall();
@@ -88,6 +88,7 @@ class _MixedAnimationState extends State<MixedAnimation>
             builder: (context) => isBouncing
                 ? Container(
                     alignment: Alignment.topCenter,
+                    margin: EdgeInsets.only(top: 30),
                     child: Container(
                         margin:
                             EdgeInsets.only(top: _bounceController.value * 3),
