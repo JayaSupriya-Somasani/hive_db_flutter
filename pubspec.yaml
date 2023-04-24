@@ -30,8 +30,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  hive: ^2.2.3
-  hive_flutter:
+  hive: ^2.1.0
+  hive_flutter: ^1.1.0
   page_transition: ^2.0.9
   audioplayers: ^0.20.1
   flutter_gif: ^0.0.4

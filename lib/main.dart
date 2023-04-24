@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:hive_db_flutter/animated_screen.dart';
-import 'package:hive_db_flutter/bouncing_ball.dart';
 import 'package:hive_db_flutter/first_screen.dart';
-import 'package:hive_db_flutter/mixed_animation.dart';
 import 'package:hive_db_flutter/second_screen.dart';
-import 'package:page_transition/page_transition.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // here we are initializing the hive database
+  await Hive.initFlutter();
+
+  //here we are opening the box , if it doesn't exist then it will be created
+  await Hive.openBox('shopping_box');
   runApp(const MyApp());
 }
 
@@ -40,10 +43,65 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final TextEditingController _name = TextEditingController();
-  final TextEditingController _quantity = TextEditingController();
+
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _quantityController = TextEditingController();
+
+  List<Map<String, dynamic>> _items = [];
+
+  //here we will moving to the previously opened box
+  final _shoppingBox = Hive.box('shopping_box');
+
+  @override
+  void initState() {
+    super.initState();
+    refreshData();
+  }
+
+  void refreshData() {
+    final data = _shoppingBox.keys.map((key) {
+
+      //here we will retrieve the item by using key. This will be iterated each time by using keys
+      final item = _shoppingBox.get(key);
+      return {'key': key, 'name': item['name'], 'quantity': item['quantity']};
+    }).toList();      // here we are converting the data into list
+    setState(() {
+      _items = data.reversed.toList();
+      print("data is ${_items.length}");
+    });
+  }
+
+  Future<void> _createItem(Map<String, dynamic> newItem) async {
+
+    //Adding new item into the box of hive
+    await _shoppingBox.add(newItem);
+    refreshData();
+  }
+
+  Future<void> _updateItem(int itemKey,Map<String, dynamic> item) async {
+
+    //Updating the item in the box by using key
+    await _shoppingBox.put(itemKey, item);
+    refreshData();
+  }
+  Future<void> _deleteItem(int itemKey) async {
+
+    //Deleting the box item by using key
+    await _shoppingBox.delete(itemKey);
+    refreshData();
+
+    //After deleting the item then we will display the snack bar
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("An item has been deleted..")));
+  }
 
   void _showForm(BuildContext ctx, int? itemKey) async {
+
+    //if the key is not null then we will get existing data from the list that we are stored it previously.
+    if(itemKey!=null){
+      final existingItem=_items.firstWhere((element) => element['key']==itemKey);
+      _nameController.text=existingItem['name'];
+      _quantityController.text=existingItem['quantity'];
+    }
     showModalBottomSheet(
         context: ctx,
         builder: (_) => Container(
@@ -55,26 +113,36 @@ class _MyHomePageState extends State<MyHomePage> {
               child: Column(
                 children: [
                   TextField(
-                    controller: _name,
+                    controller: _nameController,
                     decoration: const InputDecoration(hintText: "Item Name"),
                   ),
-                  const SizedBox(
-                    height: 10,
-                  ),
+                  const SizedBox(height: 10,),
                   TextField(
-                    controller: _quantity,
+                    controller: _quantityController,
                     decoration: const InputDecoration(hintText: "Quantity"),
                   ),
-                  const SizedBox(
-                    height: 10,
-                  ),
+                  const SizedBox(height: 10,),
                   ElevatedButton(
                       onPressed: () async {
-                        _name.text = '';
-                        _quantity.text = '';
+                        if(itemKey==null){
+                          _createItem({
+                            "name": _nameController.text,
+                            'quantity': _quantityController.text
+                          });
+                        }
+                        if(itemKey!=null){
+                          _updateItem(itemKey, {
+                            'name':_nameController.text.trim(),
+                            'quantity':_quantityController.text.trim(),
+                          });
+                        }
+                        print(
+                            "Data available in hive db ${_shoppingBox.length} ");
+                        _nameController.text = '';
+                        _quantityController.text = '';
                         Navigator.of(context).pop();
                       },
-                      child: const Text("Create New")),
+                      child:  Text(itemKey==null? "Create New" : 'Update')),
                 ],
               ),
             ));
@@ -86,65 +154,33 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Center(
-        child: Column(
-          children: [
-            ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    PageTransition(
-                      type: PageTransitionType.rightToLeft,
-                      duration: Duration(milliseconds: 800),
-                      child: FirstScreen(),
-                    ),
-                  );
-                },
-                child: const Text("First Screen")),
-            const SizedBox(
-              height: 10,
+      body: ListView.builder(
+        itemCount: _items.length,
+        itemBuilder: (_, index) {
+          final currentItem = _items[index];
+          return Card(
+            color: Colors.orange.shade100,
+            margin: const EdgeInsets.all(8),
+            elevation: 4,
+            child: ListTile(
+              title: Text(currentItem['name']),
+              subtitle: Text(currentItem['quantity'].toString()),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                      onPressed: () => _showForm(context, currentItem['key']),
+                      icon: const Icon(Icons.edit)),
+                  IconButton(onPressed: () =>_deleteItem(currentItem['key']), icon: const Icon(Icons.delete))
+                ],
+              ),
             ),
-            ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                      context,
-                      PageTransition(
-                          duration: Duration(milliseconds: 900),
-                          child: SecondScreen(),
-                          type: PageTransitionType.scale,
-                          alignment: Alignment.center));
-                },
-                child: const Text("Second Screen")),
-            ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => AnimatedScreen()));
-                },
-                child: const Text("Animated Screen")),
-            ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => BouncingBall()));
-                },
-                child: const Text("Bouncing Ball")),
-            ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => MixedAnimation()));
-                },
-                child: const Text("Mixed animation"))
-          ],
-        ),
+          );
+        },
       ),
-      floatingActionButton: const FloatingActionButton(
-        onPressed: null,
-        child: Icon(Icons.add),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showForm(context, null),
+        child: const Icon(Icons.add),
       ),
     );
   }
